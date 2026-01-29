@@ -1,0 +1,50 @@
+# NCBI API Configuration
+ncbi:
+  # Your email (required by NCBI E-utilities)
+  email: "your_email@example.com"
+
+  # Optional API key (increases rate limit from 3/sec to 10/sec)
+  # Get one at: https://www.ncbi.nlm.nih.gov/account/settings/
+  api_key: null
+
+  # Requests per second (3 without API key, 10 with API key)
+  requests_per_second: 3
+
+# Download Configuration
+download:
+  # Output directory for downloaded figures
+  output_dir: "./figures"
+
+  # HTTP timeout in seconds
+  timeout: 30
+
+  # Number of retry attempts for failed downloads
+  retry_attempts: 3
+
+  # Download chunk size in bytes
+  chunk_size: 8192
+
+# Resume Configuration
+resume:
+  # Manifest file to track download progress
+  manifest_file: "manifest.json"
+
+  # Retry failed downloads after this many hours
+  retry_failed_after_hours: 24
+
+  # Maximum retry attempts for failed PMIDs
+  max_retry_attempts: 3
+
+# Logging Configuration
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+
+  # Log file path
+  file: "figure_harvester.log"
+
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Maximum log file size before rotation (in MB)
+  max_size_mb: 10

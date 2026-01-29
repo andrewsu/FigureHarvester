@@ -1,0 +1,15 @@
+# Core dependencies
+requests>=2.31.0
+biopython>=1.81
+lxml>=4.9.0
+tenacity>=8.2.0
+tqdm>=4.66.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Optional but recommended
+Pillow>=10.0.0
+
+# Development dependencies
+pytest>=7.4.0
+requests-mock>=1.11.0
