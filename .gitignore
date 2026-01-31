@@ -43,6 +43,8 @@ figure_harvester.log
 # Downloaded figures and output
 figures/
 test_figures/
+test_output*/
+test_pdfs/*.pdf
 *.jpg
 *.png
 *.gif

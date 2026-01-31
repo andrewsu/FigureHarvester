@@ -9,6 +9,7 @@ python-dotenv>=1.0.0
 
 # Optional but recommended
 Pillow>=10.0.0
+PyMuPDF>=1.23.0  # For PDF figure extraction
 
 # Development dependencies
 pytest>=7.4.0
