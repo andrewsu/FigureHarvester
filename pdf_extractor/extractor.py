@@ -39,6 +39,13 @@ class PDFExtractor:
         self.grid_size = config.get('grid_size', 5)
         self.grid_white_threshold = config.get('grid_white_threshold', 95.0)
         self.max_white_cells = config.get('max_white_cells', 3)
+        # Dominant chromatic color filter (rejects solid-background logos like
+        # Science/AAAS red+white). Triggers when a single saturated color
+        # dominates the image — a strong logo signature that white-pixel
+        # filters miss because the background isn't white.
+        self.use_dominant_color_filter = config.get('use_dominant_color_filter', True)
+        self.dominant_color_frac_threshold = config.get('dominant_color_frac_threshold', 40.0)
+        self.dominant_color_saturation_threshold = config.get('dominant_color_saturation_threshold', 60)
         # Save rejected figures for analysis
         self.save_rejected = config.get('save_rejected', False)
         self.rejected_dir = config.get('rejected_dir', None)
@@ -244,6 +251,42 @@ class PDFExtractor:
                         return True
 
         return False
+
+    def _check_dominant_chromatic_color(self, image: Image.Image,
+                                         frac_threshold: float = 40.0,
+                                         saturation_threshold: int = 60,
+                                         n_colors: int = 32) -> bool:
+        """
+        Detect flat-background logos by a single dominant saturated color.
+
+        Quantizes to n_colors and checks the most common color. If it covers
+        more than frac_threshold% of pixels AND has saturation (max-min RGB)
+        above saturation_threshold, the image is a logo on a colored background
+        (e.g. Science/AAAS red+white). Achromatic dominants (black/white/gray
+        line art, Western blots) have saturation ~0 and pass through.
+
+        Returns True if the image should be rejected.
+        """
+        rgb = image.convert('RGB')
+        quantized = rgb.quantize(colors=n_colors, method=Image.Quantize.MEDIANCUT)
+        palette = quantized.getpalette()
+        if not palette:
+            return False
+        pixels = list(quantized.getdata())
+        if not pixels:
+            return False
+
+        # Find dominant palette index
+        counts = {}
+        for p in pixels:
+            counts[p] = counts.get(p, 0) + 1
+        dom_idx, dom_count = max(counts.items(), key=lambda kv: kv[1])
+        frac = (dom_count / len(pixels)) * 100
+
+        r, g, b = palette[dom_idx*3:dom_idx*3+3]
+        saturation = max(r, g, b) - min(r, g, b)
+
+        return frac >= frac_threshold and saturation >= saturation_threshold
 
     def process_directory(self, input_dir: Path, output_dir: Path) -> dict:
         """
@@ -490,6 +533,17 @@ class PDFExtractor:
                                      max_white_cells=self.max_white_cells):
                 logger.debug(f"Skipping image with too many white grid cells")
                 # Save rejected image if configured
+                if self.save_rejected and self.rejected_dir:
+                    self._save_rejected_figure(trimmed_image, pdf_name, page_num, xref)
+                return None
+
+        # Dominant chromatic color filter (catches solid-background logos)
+        if self.use_dominant_color_filter:
+            if self._check_dominant_chromatic_color(
+                    trimmed_image,
+                    frac_threshold=self.dominant_color_frac_threshold,
+                    saturation_threshold=self.dominant_color_saturation_threshold):
+                logger.debug("Skipping image dominated by a single saturated color (logo)")
                 if self.save_rejected and self.rejected_dir:
                     self._save_rejected_figure(trimmed_image, pdf_name, page_num, xref)
                 return None
